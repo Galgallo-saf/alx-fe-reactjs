@@ -16,7 +16,7 @@ function App() {
   <Header />
   <MainContent />
   <UserProfile 
-    name="Galgallo" 
+    name="Alice" 
     age={25} 
     bio="Loves hiking and photography" 
   />
