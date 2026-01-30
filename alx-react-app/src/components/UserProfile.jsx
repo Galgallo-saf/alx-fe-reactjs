@@ -1,11 +1,29 @@
 const UserProfile = (props) => {
   return (
-    <div style={{ border: '1px solid #ccc', padding: '1rem', width: '300px', margin: '1rem auto', borderRadius: '8px' }}>
-      <h2>{props.name}</h2>
-      <p>Age: {props.age}</p>
-      <p>Bio: {props.bio}</p>
+    <div 
+      style={{
+        border: '1px solid gray',
+        padding: '15px',
+        margin: '15px',
+        borderRadius: '5px'
+      }}
+      >
+      <h2 style={{ color: 'blue', marginBottom: '10px' }}>
+        {props.name}
+      </h2>
+      
+      <p>
+        Age:{' '}
+        <span style={{ fontWeight: 'bold', color: 'green' }}>
+          {props.age}
+        </span>
+      </p>
+
+      <p style={{ marginTop: '8px' }}>
+        Bio: {props.bio}
+      </p>
     </div>
   );
-};
+}
 
 export default UserProfile;
