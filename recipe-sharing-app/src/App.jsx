@@ -1,4 +1,6 @@
 import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import RecipeDetails from "./components/RecipeDetails";
 import SearchBar from "./components/SearchBar";
 import Filters from "./components/Filters";
 import AddRecipeForm from "./components/AddRecipeForm";
