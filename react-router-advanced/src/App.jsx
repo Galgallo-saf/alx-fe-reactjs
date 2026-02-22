@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import BlogPost from "./components/BlogPost";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function Home() {
   return <h2>Home Page</h2>;
@@ -24,6 +25,14 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/blog/:id" element={<BlogPost />} />
       </Routes>
+      <Route
+      path="/profile"
+      element={
+      <ProtectedRoute>
+      <Profile />
+    </ProtectedRoute>
+  }
+/>
     </BrowserRouter>
   );
 }
