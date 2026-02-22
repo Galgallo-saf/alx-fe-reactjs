@@ -1,6 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import TodoList from "../components/TodoList"; // adjust path if needed
+import "@testing-library/jest-dom";
+import TodoList from "../components/TodoList";
 
 describe("TodoList Component", () => {
   test("renders initial todos", () => {
@@ -11,7 +12,6 @@ describe("TodoList Component", () => {
 
   test("adds a new todo", () => {
     render(<TodoList />);
-    
     const input = screen.getByPlaceholderText("Add new todo");
     const button = screen.getByText("Add");
 
@@ -23,7 +23,6 @@ describe("TodoList Component", () => {
 
   test("toggles a todo", () => {
     render(<TodoList />);
-    
     const todo = screen.getByText("Learn React");
     fireEvent.click(todo);
 
@@ -32,7 +31,6 @@ describe("TodoList Component", () => {
 
   test("deletes a todo", () => {
     render(<TodoList />);
-    
     const deleteButtons = screen.getAllByText("Delete");
     fireEvent.click(deleteButtons[0]);
 
