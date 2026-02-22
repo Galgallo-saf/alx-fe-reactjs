@@ -5,6 +5,8 @@ import Filters from "./components/Filters";
 import AddRecipeForm from "./components/AddRecipeForm";
 import RecipeList from "./components/RecipeList";
 import RecipeDetails from "./components/RecipeDetails";
+import FavoritesList from "./components/FavoritesList";
+import RecommendationsList from "./components/RecommendationsList";
 
 function App() {
   return (
@@ -21,6 +23,12 @@ function App() {
 
         {/* Recipe List */}
         <RecipeList />
+
+        {/* Favorites List */}
+        <FavoritesList />
+
+        {/*Recommendations List*/}
+        <RecommendationsList />
       </div>
 
       <Routes>

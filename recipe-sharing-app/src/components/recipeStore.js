@@ -16,43 +16,64 @@ export const useRecipeStore = create((set, get) => ({
     },
   ],
 
-  // Search/filter state
+  // =====================
+  // Search & Filtering
+  // =====================
   searchTerm: "",
-  ingredientFilter: "",
-  maxPrepTime: "",
   filteredRecipes: [],
 
-  // Update search term
   setSearchTerm: (term) => set({ searchTerm: term }),
-  setIngredientFilter: (ingredient) => set({ ingredientFilter: ingredient }),
-  setMaxPrepTime: (time) => set({ maxPrepTime: time }),
 
-  // Filter function
-  filterRecipes: () => {
-    const { recipes, searchTerm, ingredientFilter, maxPrepTime } = get();
+  filterRecipes: () =>
+    set((state) => ({
+      filteredRecipes: state.recipes.filter((recipe) =>
+        recipe.title.toLowerCase().includes(state.searchTerm.toLowerCase())
+      ),
+    })),
 
-    const filtered = recipes.filter((recipe) => {
-      const matchesTitle = recipe.title
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+  // =====================
+  // Favorites
+  // =====================
+  favorites: [],
 
-      const matchesIngredient =
-        ingredientFilter === "" ||
-        recipe.ingredients
-          .join(" ")
-          .toLowerCase()
-          .includes(ingredientFilter.toLowerCase());
+  addFavorite: (recipeId) =>
+    set((state) => ({
+      favorites: [...state.favorites, recipeId],
+    })),
 
-      const matchesPrepTime =
-        maxPrepTime === "" || recipe.prepTime <= Number(maxPrepTime);
+  removeFavorite: (recipeId) =>
+    set((state) => ({
+      favorites: state.favorites.filter((id) => id !== recipeId),
+    })),
 
-      return matchesTitle && matchesIngredient && matchesPrepTime;
-    });
+  // =====================
+  // Recommendations
+  // =====================
+  recommendations: [],
 
-    set({ filteredRecipes: filtered });
+  generateRecommendations: () => {
+    const { recipes, favorites } = get();
+
+    // Simple mock recommendation logic
+    const recommended = recipes.filter(
+      (recipe) =>
+        !favorites.includes(recipe.id) &&
+        Math.random() > 0.5
+    );
+
+    set({ recommendations: recommended });
   },
 
-  // Add/delete recipes
-  addRecipe: (recipe) => set((state) => ({ recipes: [...state.recipes, recipe] })),
-  deleteRecipe: (id) => set((state) => ({ recipes: state.recipes.filter((r) => r.id !== id) })),
+  // =====================
+  // Existing Features
+  // =====================
+  addRecipe: (recipe) =>
+    set((state) => ({
+      recipes: [...state.recipes, recipe],
+    })),
+
+  deleteRecipe: (id) =>
+    set((state) => ({
+      recipes: state.recipes.filter((recipe) => recipe.id !== id),
+    })),
 }));
