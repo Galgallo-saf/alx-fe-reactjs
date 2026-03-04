@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { searchUsersAdvanced } from "../services/githubService";
+import { fetchUserData } from "../services/githubService";
 
 function Search() {
   const [username, setUsername] = useState("");
@@ -18,12 +18,7 @@ function Search() {
     setPage(1);
 
     try {
-      const data = await searchUsersAdvanced(
-        username,
-        location,
-        minRepos,
-        1
-      );
+      const data = await fetchUserData(username, location, minRepos, 1);
       setUsers(data.items);
     } catch (err) {
       setError(true);
@@ -37,12 +32,7 @@ function Search() {
     setPage(nextPage);
 
     try {
-      const data = await searchUsersAdvanced(
-        username,
-        location,
-        minRepos,
-        nextPage
-      );
+      const data = await fetchUserData(username, location, minRepos, nextPage);
       setUsers((prev) => [...prev, ...data.items]);
     } catch (err) {
       setError(true);
@@ -63,7 +53,6 @@ function Search() {
           onChange={(e) => setUsername(e.target.value)}
           required
         />
-
         <input
           type="text"
           placeholder="Location"
@@ -71,7 +60,6 @@ function Search() {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
         />
-
         <input
           type="number"
           placeholder="Minimum Repositories"
@@ -79,7 +67,6 @@ function Search() {
           value={minRepos}
           onChange={(e) => setMinRepos(e.target.value)}
         />
-
         <button
           type="submit"
           className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
@@ -106,9 +93,7 @@ function Search() {
               alt={user.login}
               className="w-24 h-24 rounded-full mx-auto"
             />
-            <h2 className="text-lg font-semibold mt-2">
-              {user.login}
-            </h2>
+            <h2 className="text-lg font-semibold mt-2">{user.login}</h2>
             <a
               href={user.html_url}
               target="_blank"
