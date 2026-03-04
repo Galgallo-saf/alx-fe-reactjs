@@ -22,7 +22,6 @@ export const searchUsersAdvanced = async (
     const response = await axios.get(
       `${BASE_URL}/search/users?q=${query}&page=${page}&per_page=5`
     );
-
     return response.data;
   } catch (error) {
     throw error;
