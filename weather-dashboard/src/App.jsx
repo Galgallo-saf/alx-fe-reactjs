@@ -1,113 +1,249 @@
 import React, { useState, useEffect } from "react";
 import WeatherCard from "./components/WeatherCard";
-import SearchBar from "./components/SearchBar";
+import ErrorMessage from "./components/ErrorMessage";
 
-const App = () => {
+const API_KEY = "efa467e0bfa50a27819f3914318fea49";
+
+function App() {
+  const [query, setQuery] = useState("");
   const [weather, setWeather] = useState(null);
-  const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem("favorites");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem("history");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [forecast, setForecast] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Persist favorites to localStorage
+  // ================= FETCH WEATHER =================
+  const fetchWeather = async (city) => {
+    if (!city) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Current weather
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`
+      );
+
+      if (!response.ok) {
+        throw new Error("City not found. Please enter a valid city name.");
+      }
+
+      const data = await response.json();
+
+      const mappedWeather = {
+        name: data.name,
+        iconUrl: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
+        description: data.weather[0].description,
+        temp: data.main.temp,
+        temp_min: data.main.temp_min,
+        temp_max: data.main.temp_max,
+        humidity: data.main.humidity,
+        speed: data.wind.speed,
+      };
+
+      setWeather(mappedWeather);
+
+      // Forecast (5-day / 3-hour interval → filter daily)
+      const forecastResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`
+      );
+
+      const forecastData = await forecastResponse.json();
+
+      const dailyData = forecastData.list.filter(
+        (_, index) => index % 8 === 0
+      );
+
+      setForecast(dailyData.slice(0, 7));
+
+      // Update search history (avoid duplicates)
+      setHistory((prev) => [
+        mappedWeather,
+        ...prev.filter((item) => item.name !== mappedWeather.name),
+      ]);
+
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ================= SEARCH =================
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchWeather(query);
+    setQuery("");
+  };
+
+  // ================= FAVORITES =================
+  const handleToggleFavorite = (weatherItem) => {
+    if (favorites.some((fav) => fav.name === weatherItem.name)) {
+      setFavorites(favorites.filter((fav) => fav.name !== weatherItem.name));
+    } else {
+      setFavorites([weatherItem, ...favorites]);
+    }
+  };
+
+  // ================= LOCAL STORAGE LOAD =================
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem("favorites");
+    const savedHistory = localStorage.getItem("history");
+
+    if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+    if (savedHistory) setHistory(JSON.parse(savedHistory));
+  }, []);
+
+  // ================= SAVE TO LOCAL STORAGE =================
   useEffect(() => {
     localStorage.setItem("favorites", JSON.stringify(favorites));
   }, [favorites]);
 
-  // Persist search history to localStorage
   useEffect(() => {
     localStorage.setItem("history", JSON.stringify(history));
   }, [history]);
 
-  const handleSearch = async (city) => {
-    const apiKey = "efa467e0bfa50a27819f3914318fea49"; 
-    try {
-      const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
-      );
-      if (!response.ok) throw new Error("City not found");
-      const data = await response.json();
-      setWeather(data);
+  // ================= AUTO REFRESH (5 MINUTES) =================
+  useEffect(() => {
+    if (!weather) return;
 
-      // Update search history
-      setHistory((prev) => {
-        const updated = [city, ...prev.filter((c) => c !== city)];
-        return updated.slice(0, 5); // keep last 5 searches
-      });
-    } catch (error) {
-      alert(error.message);
+    const interval = setInterval(() => {
+      fetchWeather(weather.name);
+    }, 300000);
+
+    return () => clearInterval(interval);
+  }, [weather]);
+
+  // ================= GEOLOCATION =================
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        const response = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`
+        );
+
+        const data = await response.json();
+        fetchWeather(data.name);
+      },
+      () => {
+        console.log("Geolocation permission denied.");
+      }
+    );
+  }, []);
+
+  // ================= AUTO CLEAR ERROR =================
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 4000);
+      return () => clearTimeout(timer);
     }
-  };
-
-  const addFavorite = () => {
-    if (weather && !favorites.some((f) => f.name === weather.name)) {
-      setFavorites([weather, ...favorites]);
-    }
-  };
-
-  const removeFavorite = (name) => {
-    setFavorites(favorites.filter((f) => f.name !== name));
-  };
+  }, [error]);
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-6">Weather Dashboard</h1>
-      <SearchBar onSearch={handleSearch} />
+    <div className="container mx-auto p-4 min-h-screen bg-gray-50">
+      <h1 className="text-3xl font-bold text-center mb-6">
+        Weather Dashboard
+      </h1>
 
-      {weather && (
-        <div className="my-4">
-          <button
-            onClick={addFavorite}
-            className="px-4 py-2 bg-yellow-500 text-white rounded"
-          >
-            Add to Favorites
-          </button>
-          <WeatherCard weather={weather} />
+      {/* SEARCH */}
+      <form onSubmit={handleSearch} className="flex justify-center mb-6">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Enter city name"
+          className="border p-2 rounded-l w-64"
+        />
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 rounded-r"
+        >
+          Search
+        </button>
+      </form>
+
+      {loading && (
+        <div className="text-center text-blue-500 mb-4">
+          Loading weather data...
         </div>
       )}
 
-      {history.length > 0 && (
-        <div className="my-4">
-          <h2 className="font-semibold mb-2">Search History:</h2>
-          <ul>
-            {history.map((city, idx) => (
-              <li key={idx}>
-                <button
-                  className="text-blue-600 underline mr-2"
-                  onClick={() => handleSearch(city)}
-                >
-                  {city}
-                </button>
-              </li>
+      <ErrorMessage message={error} />
+
+      {/* CURRENT WEATHER */}
+      {weather && !loading && (
+        <WeatherCard
+          weather={weather}
+          isFavorite={favorites.some((f) => f.name === weather.name)}
+          onToggleFavorite={handleToggleFavorite}
+        />
+      )}
+
+      {/* FORECAST */}
+      {forecast.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">7-Day Forecast</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {forecast.map((day) => (
+              <div
+                key={day.dt}
+                className="bg-white p-4 rounded shadow text-center"
+              >
+                <p className="font-semibold">
+                  {new Date(day.dt * 1000).toLocaleDateString()}
+                </p>
+                <img
+                  src={`https://openweathermap.org/img/wn/${day.weather[0].icon}@2x.png`}
+                  alt=""
+                  className="mx-auto"
+                />
+                <p>{day.main.temp}°C</p>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
+      {/* FAVORITES */}
       {favorites.length > 0 && (
-        <div className="my-4">
-          <h2 className="font-semibold mb-2">Favorites:</h2>
-          <ul>
-            {favorites.map((fav, idx) => (
-              <li key={idx} className="flex items-center mb-2">
-                <span className="mr-2">{fav.name}</span>
-                <button
-                  className="px-2 py-1 bg-red-500 text-white rounded"
-                  onClick={() => removeFavorite(fav.name)}
-                >
-                  Remove
-                </button>
-              </li>
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Favorites</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {favorites.map((fav) => (
+              <WeatherCard
+                key={fav.name}
+                weather={fav}
+                isFavorite={true}
+                onToggleFavorite={handleToggleFavorite}
+              />
             ))}
-          </ul>
+          </div>
+        </div>
+      )}
+
+      {/* HISTORY */}
+      {history.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Search History</h2>
+          <div className="flex flex-wrap gap-2">
+            {history.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => fetchWeather(item.name)}
+                className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
-};
+}
 
 export default App;
